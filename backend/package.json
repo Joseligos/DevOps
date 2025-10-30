@@ -1,0 +1,16 @@
+{
+  "name": "crud-backend", // Name of the backend project
+  "version": "1.0.0", // Version for tracking changes
+  "scripts": {
+    "start": "node index.js", // Runs the server
+    "test": "echo 'Add tests here'", // Placeholder for tests (update with Jest later)
+    "lint": "eslint ." // Checks code style with ESLint
+  },
+  "dependencies": {
+    "express": "^4.17.1", // Web framework for API endpoints
+    "pg": "^8.7.3" // PostgreSQL client to connect to the database
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0" // Linting tool for code quality
+  }
+}
