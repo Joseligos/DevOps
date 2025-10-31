@@ -17,9 +17,28 @@ jobs:
       - name: Cache dependencies # Cache node_modules to speed up builds
         uses: actions/cache@v3
         with:
-          path: ~/.npm # Cache npm’s global cache
+          path: ~/.npm # Cache npm's global cache
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }} # Key based on OS and package-lock.json
-      - run: npm ci # Install dependencies reliably using package-lock.json
-      - run: npm test # Run tests defined in package.json
-      - run: npm run lint # Run ESLint to ensure code quality
+      
+      # Backend steps
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci # Install dependencies reliably using package-lock.json
+      - name: Test backend
+        working-directory: ./backend
+        run: npm test # Run tests defined in package.json
+      - name: Lint backend
+        working-directory: ./backend
+        run: npm run lint # Run ESLint to ensure code quality
+      
+      # Frontend steps
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci # Install dependencies reliably using package-lock.json
+      - name: Test frontend
+        working-directory: ./frontend
+        run: npm test # Run tests defined in package.json
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: npm run lint # Run ESLint to ensure code quality
 
