@@ -1,16 +1,32 @@
-# Stage 1: Build the application
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./  # Copy package files first for better caching
-RUN npm ci             # Install all dependencies
-COPY . .               # Then copy source code
-RUN npm run build      # Build the application
+# Backend Dockerfile for Node.js/Express API
+# Multi-stage build for optimal image size
 
-# Stage 2: Production image with minimal footprint
+# Stage 1: Install dependencies
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Copy package files from backend directory
+COPY backend/package*.json ./
+# Install all dependencies
+RUN npm ci
+
+# Stage 2: Production image
 FROM node:18-alpine
 WORKDIR /app
-# Only copy built assets and production dependencies
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-RUN npm ci --production  # Install only production dependencies
-CMD ["node", "dist/server.js"]  # Run the built application
+
+# Copy package files
+COPY backend/package*.json ./
+# Install only production dependencies
+RUN npm ci --production && npm cache clean --force
+
+# Copy backend application code
+COPY backend/ ./
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Run as non-root user for security
+USER node
+
+# Start the application
+CMD ["node", "index.js"]
