@@ -14,16 +14,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18' # Use Node.js 18 for consistency
-      - name: Cache node modules
+      - name: Cache dependencies # Cache node_modules to speed up builds
         uses: actions/cache@v3
         with:
-          path: |  # Cache both global npm cache and local node_modules
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}  # Cache key based on OS and dependencies
-          restore-keys: |  # Fallback keys if exact match isn't found
-            ${{ runner.os }}-node-
+          path: ~/.npm # Cache npm's global cache
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }} # Key based on OS and package-lock.json
       - run: npm ci # Install dependencies reliably using package-lock.json
       - run: npm test # Run tests defined in package.json
       - run: npm run lint # Run ESLint to ensure code quality
-
+      - name: Build Docker image
+        run: |
+          # Enable BuildKit for parallel and more efficient builds
+          DOCKER_BUILDKIT=1 docker build -t myapp:latest .
