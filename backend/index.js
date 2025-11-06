@@ -10,6 +10,21 @@ app.use(express.json()); // Parse JSON request bodies
 // Connect to PostgreSQL using DATABASE_URL from environment variables
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Ensure required schema exists (idempotent)
+async function ensureSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL
+      );
+    `);
+    console.log('DB schema ensured: users table exists');
+  } catch (err) {
+    console.error('Failed to ensure DB schema:', err && (err.stack || err.message || err));
+  }
+}
+
 // Health check endpoint for Kubernetes probes and monitoring
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
@@ -72,9 +87,13 @@ process.on('uncaughtException', (err) => {
   setTimeout(() => process.exit(1), 1000);
 });
 
-// Optional quick DB connectivity check at startup (logged, non-fatal)
-pool.query('SELECT 1').then(() => {
-  console.log('DB connection OK');
-}).catch((err) => {
-  console.error('DB connectivity check failed:', err && (err.stack || err.message || err));
-});
+// Optional quick DB connectivity check at startup (logged, non-fatal) and ensure schema
+pool
+  .query('SELECT 1')
+  .then(() => {
+    console.log('DB connection OK');
+    return ensureSchema();
+  })
+  .catch((err) => {
+    console.error('DB connectivity check failed:', err && (err.stack || err.message || err));
+  });
