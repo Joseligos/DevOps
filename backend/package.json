@@ -1,6 +1,9 @@
 {
   "name": "crud-backend",
   "version": "1.0.0",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "echo 'No tests specified' && exit 0",
