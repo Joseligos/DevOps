@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'; // Import React and hooks
 import axios from 'axios'; // Import Axios for API requests
 
+// Get API URL from environment variable or fallback to localhost
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 function App() {
   // State for storing users fetched from the backend
   const [users, setUsers] = useState([]);
@@ -9,12 +12,12 @@ function App() {
 
   // Fetch users when the component mounts
   useEffect(() => {
-    axios.get('http://localhost:3000/users').then(res => setUsers(res.data));
+    axios.get(`${API_URL}/users`).then(res => setUsers(res.data));
   }, []); // Empty array means run once on mount
 
   // Add a new user via the API
   const addUser = async () => {
-    const res = await axios.post('http://localhost:3000/users', { name }); // Post new user
+    const res = await axios.post(`${API_URL}/users`, { name }); // Post new user
     setUsers([...users, res.data]); // Update users list
     setName(''); // Clear input field
   };
