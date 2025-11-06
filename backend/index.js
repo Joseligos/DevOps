@@ -72,10 +72,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'internal_server_error' });
 });
 
-// Start the server on the port specified by Render or default to 3000
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
-
 // Log unhandled promise rejections and uncaught exceptions so they appear in Render logs
 process.on('unhandledRejection', (reason) => {
   console.error('unhandledRejection:', reason);
@@ -87,13 +83,21 @@ process.on('uncaughtException', (err) => {
   setTimeout(() => process.exit(1), 1000);
 });
 
-// Optional quick DB connectivity check at startup (logged, non-fatal) and ensure schema
-pool
-  .query('SELECT 1')
-  .then(() => {
+// Startup: ensure schema, then start server
+(async () => {
+  try {
+    console.log('Checking DB connection...');
+    await pool.query('SELECT 1');
     console.log('DB connection OK');
-    return ensureSchema();
-  })
-  .catch((err) => {
-    console.error('DB connectivity check failed:', err && (err.stack || err.message || err));
-  });
+    
+    console.log('Ensuring schema...');
+    await ensureSchema();
+    
+    // Start the server ONLY after schema is ready
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+  } catch (err) {
+    console.error('Startup failed:', err && (err.stack || err.message || err));
+    process.exit(1);
+  }
+})();
