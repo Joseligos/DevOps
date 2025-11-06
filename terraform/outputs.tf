@@ -3,12 +3,12 @@
 
 output "backend_url" {
   description = "URL of the deployed backend service"
-  value       = render_web_service.backend.service_url
+  value       = render_web_service.backend.url
 }
 
 output "frontend_url" {
   description = "URL of the deployed frontend application"
-  value       = render_static_site.frontend.service_url
+  value       = render_static_site.frontend.url
 }
 
 output "backend_id" {
