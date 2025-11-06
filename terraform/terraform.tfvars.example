@@ -1,0 +1,16 @@
+# Example values for terraform.tfvars
+# DO NOT commit this file to git! Add it to .gitignore
+
+# Get your Render API key from: https://dashboard.render.com/account/settings
+render_api_key = "rnd_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Your GitHub repository URL
+github_repo_url = "https://github.com/Joseligos/DevOps"
+
+# PostgreSQL connection string from Railway or other provider
+# Example: postgresql://user:password@host:5432/database
+database_url = "postgresql://postgres:password@your-db-host.railway.app:5432/crud_db"
+
+# Optional: Override default values
+# app_name = "my-custom-app-name"
+# branch = "production"
