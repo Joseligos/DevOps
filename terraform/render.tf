@@ -1,27 +1,22 @@
 # Backend Web Service on Render
-# This deploys your Node.js/Express API
+# This deploys your Node.js/Express API via Dockerfile
 
 resource "render_web_service" "backend" {
   name        = "${var.app_name}-backend"
   region      = "oregon"
   plan        = "starter"  # Free tier
   
+  # Use Dockerfile at repo root (Render will auto-detect)
   runtime_source = {
-    native_runtime = {
-      auto_deploy      = true
-      branch           = var.branch
-      repo_url         = var.github_repo_url
-      root_directory   = "backend"
-      runtime          = "node"
-      build_command    = "npm install"
+    docker = {
+      auto_deploy = true
+      branch      = var.branch
+      repo_url    = var.github_repo_url
     }
   }
   
-  # Root directory must also be set at resource level
-  root_directory = "backend"
-  
-  # Start command must be at the resource level
-  start_command = "node index.js"
+  # Root directory is repo root (where Dockerfile is)
+  root_directory = ""
   
   # Environment variables (map format)
   env_vars = {
