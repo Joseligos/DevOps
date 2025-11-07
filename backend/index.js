@@ -8,25 +8,31 @@ const app = express(); // Create an Express app
 app.use(cors());
 app.use(express.json()); // Parse JSON request bodies
 
+console.log('[STARTUP] Initializing database connection pool...');
+console.log('[STARTUP] DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+
 // Connect to PostgreSQL using DATABASE_URL from environment variables
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+console.log('[STARTUP] Pool created, ready to connect on first query');
 
 // Ensure required schema exists (idempotent)
 async function ensureSchema() {
   try {
-    console.log('Attempting to create users table...');
+    console.log('[SCHEMA] Attempting to create users table...');
     const createTableSQL = `CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);`;
-    console.log('SQL:', createTableSQL);
+    console.log('[SCHEMA] SQL:', createTableSQL);
     const result = await pool.query(createTableSQL);
-    console.log('CREATE TABLE succeeded. Result:', { command: result.command, rowCount: result.rowCount });
+    console.log('[SCHEMA] CREATE TABLE succeeded. Result:', { command: result.command, rowCount: result.rowCount });
     
     // Verify table exists by querying information_schema
     const verifySQL = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')`;
     const verifyResult = await pool.query(verifySQL);
-    console.log('Table verification:', verifyResult.rows[0]);
+    console.log('[SCHEMA] Table verification:', verifyResult.rows[0]);
+    console.log('[SCHEMA] ✅ users table is ready');
   } catch (err) {
-    console.error('CRITICAL: Failed to ensure DB schema:', err);
-    console.error('Error details:', { code: err.code, message: err.message, severity: err.severity });
+    console.error('[SCHEMA] ❌ CRITICAL: Failed to ensure DB schema:', err);
+    console.error('[SCHEMA] Error details:', { code: err.code, message: err.message, severity: err.severity });
     throw err; // Stop startup if schema creation fails
   }
 }
@@ -92,18 +98,21 @@ process.on('uncaughtException', (err) => {
 // Startup: ensure schema, then start server
 (async () => {
   try {
-    console.log('Checking DB connection...');
+    console.log('[STARTUP] IIFE started, beginning startup sequence...');
+    console.log('[STARTUP] Checking DB connection...');
     await pool.query('SELECT 1');
-    console.log('DB connection OK');
+    console.log('[STARTUP] DB connection OK');
     
-    console.log('Ensuring schema...');
+    console.log('[STARTUP] Ensuring schema...');
     await ensureSchema();
+    console.log('[STARTUP] Schema initialization complete');
     
     // Start the server ONLY after schema is ready
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+    console.log('[STARTUP] Starting Express server on port', PORT);
+    app.listen(PORT, () => console.log(`[STARTUP] ✅ Backend running on port ${PORT}`));
   } catch (err) {
-    console.error('Startup failed:', err && (err.stack || err.message || err));
+    console.error('[STARTUP] ❌ FAILED:', err && (err.stack || err.message || err));
     process.exit(1);
   }
 })();
