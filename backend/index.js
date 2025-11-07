@@ -69,17 +69,26 @@ const errorsTotal = new promClient.Counter({
 
 // ========== MIDDLEWARE ==========
 
-// Middleware to track request metrics
+// Middleware to track request metrics (skip for /metrics endpoint to avoid recursion)
 app.use((req, res, next) => {
+  // Skip metrics tracking for the /metrics endpoint itself
+  if (req.path === '/metrics') {
+    return next();
+  }
+  
   const startTime = Date.now();
   httpRequestsActive.inc();
   
   // Track when response is sent
   res.on('finish', () => {
-    const duration = (Date.now() - startTime) / 1000;
-    httpRequestsActive.dec();
-    httpRequestsTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc();
-    httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(duration);
+    try {
+      const duration = (Date.now() - startTime) / 1000;
+      httpRequestsActive.dec();
+      httpRequestsTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc();
+      httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(duration);
+    } catch (err) {
+      console.error('[METRICS-MIDDLEWARE] Error tracking metrics:', err);
+    }
   });
   
   next();
