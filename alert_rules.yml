@@ -1,0 +1,160 @@
+# Alert Rules para Prometheus
+# Usa este archivo con prometheus.yml para alertas automáticas
+
+groups:
+  - name: crud_app_alerts
+    interval: 30s
+    rules:
+      # ALERTA 1: Error rate > 5%
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) 
+           / 
+           sum(rate(http_requests_total[5m])) by (job)) 
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://github.com/yourrepo/runbooks/error-rate"
+
+      # ALERTA 2: P95 latencia > 1 segundo
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 1s)"
+
+      # ALERTA 3: P99 latencia > 2 segundos (crítico)
+      - alert: CriticalLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          ) > 2
+        for: 3m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "CRITICAL latency on {{ $labels.job }}"
+          description: "P99 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+
+      # ALERTA 4: Database queries lentas
+      - alert: SlowDatabaseQueries
+        expr: |
+          (sum(rate(db_query_duration_seconds_sum[5m])) by (query_type)
+           /
+           sum(rate(db_query_duration_seconds_count[5m])) by (query_type))
+          > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Slow database queries ({{ $labels.query_type }})"
+          description: "Average query time is {{ $value | humanizeDuration }} (threshold: 500ms)"
+
+      # ALERTA 5: Errores totales creciendo
+      - alert: IncreasingErrorRate
+        expr: |
+          increase(errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Increasing error count ({{ $labels.type }} in {{ $labels.endpoint }})"
+          description: "Errors increased by {{ $value }} in 5 minutes"
+
+      # ALERTA 6: Activos requests muy altos
+      - alert: TooManyActiveRequests
+        expr: |
+          http_requests_active > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Too many active requests"
+          description: "Currently {{ $value }} active requests (threshold: 100)"
+
+      # ALERTA 7: Backend no responde (CRÍTICO)
+      - alert: BackendDown
+        expr: |
+          up{job="backend-render"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Backend is DOWN"
+          description: "Backend service is unreachable for 2 minutes"
+          action: "Check Render dashboard immediately"
+
+      # ALERTA 8: Error rate extremo (CRÍTICO)
+      - alert: CriticalErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) 
+           / 
+           sum(rate(http_requests_total[5m])) by (job)) 
+          > 0.2
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "CRITICAL error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 20%)"
+          action: "Emergency action required"
+
+# Reglas de recording (computar valores con anticipación para mejor performance)
+  - name: crud_app_recording
+    interval: 30s
+    rules:
+      # Pre-compute error rate
+      - record: app:error_rate:5m
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) 
+           / 
+           sum(rate(http_requests_total[5m])) by (job))
+
+      # Pre-compute latency percentiles
+      - record: app:latency:p50:5m
+        expr: |
+          histogram_quantile(0.50, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+      - record: app:latency:p95:5m
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+      - record: app:latency:p99:5m
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+      # Pre-compute request rates by route
+      - record: app:requests_per_second:by_route:5m
+        expr: |
+          sum(rate(http_requests_total[5m])) by (route, method)
+
+      # Pre-compute DB query latency
+      - record: app:db_latency:avg:5m
+        expr: |
+          (sum(rate(db_query_duration_seconds_sum[5m])) by (query_type)
+           /
+           sum(rate(db_query_duration_seconds_count[5m])) by (query_type))

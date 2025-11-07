@@ -1,0 +1,95 @@
+# AlertManager configuration
+# Maneja alertas desde Prometheus y las envía a diferentes canales
+
+global:
+  resolve_timeout: 5m
+  # SMTP para email alerts (opcional, configurar si quieres email)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_auth_username: 'your-email@gmail.com'
+  # smtp_auth_password: 'your-app-password'
+  # smtp_from: 'alerts@example.com'
+
+# Plantillas de alertas
+templates: []
+  # - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing tree
+route:
+  # Receptor por default
+  receiver: 'team-devops'
+  
+  # Agrupar alertas por:
+  group_by: ['alertname', 'job', 'severity']
+  
+  # Esperar 30s antes de enviar para agrupar
+  group_wait: 30s
+  
+  # Re-enviar cada 12 horas
+  group_interval: 12h
+  
+  # Esperar 5 min antes de resolver
+  repeat_interval: 5m
+
+  # Sub-rutas
+  routes:
+    # Alertas críticas - ir a Slack inmediatamente
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Alertas warning - ir a email
+    - match:
+        severity: warning
+      receiver: 'email-alerts'
+      group_wait: 30s
+      repeat_interval: 4h
+
+# Receptores (destinations para alertas)
+receivers:
+  # Receptor por default
+  - name: 'team-devops'
+    email_configs:
+      - to: 'devops@example.com'
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.example.com:587'
+        auth_username: 'alertmanager@example.com'
+        auth_password: 'your-password'
+        headers:
+          Subject: '⚠️ {{ .GroupLabels.alertname }}'
+
+  # Alertas críticas a Slack
+  - name: 'slack-critical'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+        channel: '#devops-critical'
+        title: '🚨 CRITICAL ALERT'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+        send_resolved: true
+
+  # Alertas a email
+  - name: 'email-alerts'
+    email_configs:
+      - to: 'devops-team@example.com'
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.example.com:587'
+        auth_username: 'alertmanager@example.com'
+        auth_password: 'your-password'
+        headers:
+          Subject: '⚠️ {{ .GroupLabels.alertname }}'
+
+# Silenciar alertas (inhibition rules)
+inhibit_rules:
+  # No enviar warning si ya hay critical
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'job']
+
+  # No enviar si está en maintenance
+  - source_match:
+      alertname: 'Maintenance'
+    target_match_re:
+      alertname: '.+'

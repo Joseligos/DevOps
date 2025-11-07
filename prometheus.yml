@@ -1,0 +1,46 @@
+# Prometheus Configuration - ejemplo para usar localmente
+# IMPORTANTE: Reemplaza las credenciales de Grafana antes de usar
+
+global:
+  scrape_interval: 15s          # Scrape metrics every 15 seconds
+  evaluation_interval: 15s      # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'devops-crud-app'  # Add label to all time series
+
+# Remote write to Grafana Cloud (comentado hasta que obtengas credenciales)
+# Descomenta esto cuando tengas tus credenciales de Grafana Cloud
+# remote_write:
+#   - url: https://prometheus-blocks-prod-us-central1.grafana-blocks.grafana.io/api/prom/push
+#     basic_auth:
+#       username: YOUR_GRAFANA_USERNAME_HERE
+#       password: YOUR_GRAFANA_PASSWORD_HERE
+
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: 'prometheus-self'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scrape your backend in Render (UPDATE WITH YOUR URL)
+  - job_name: 'backend-render'
+    metrics_path: '/metrics'
+    scheme: https
+    scrape_interval: 30s
+    static_configs:
+      # REEMPLAZA ESTO CON TU URL DE RENDER
+      - targets: ['devops-crud-app-backend.onrender.com']
+
+  # Para desarrollo local (descomenta si corre backend localmente)
+  # - job_name: 'backend-local'
+  #   scheme: http
+  #   static_configs:
+  #     - targets: ['localhost:3000']
+
+# Alerting rules (se evaluarán cada 15 segundos)
+rule_files:
+  - 'alert_rules.yml'  # Ver archivo alert_rules.yml para reglas
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
