@@ -14,15 +14,20 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // Ensure required schema exists (idempotent)
 async function ensureSchema() {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL
-      );
-    `);
-    console.log('DB schema ensured: users table exists');
+    console.log('Attempting to create users table...');
+    const createTableSQL = `CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);`;
+    console.log('SQL:', createTableSQL);
+    const result = await pool.query(createTableSQL);
+    console.log('CREATE TABLE succeeded. Result:', { command: result.command, rowCount: result.rowCount });
+    
+    // Verify table exists by querying information_schema
+    const verifySQL = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')`;
+    const verifyResult = await pool.query(verifySQL);
+    console.log('Table verification:', verifyResult.rows[0]);
   } catch (err) {
-    console.error('Failed to ensure DB schema:', err && (err.stack || err.message || err));
+    console.error('CRITICAL: Failed to ensure DB schema:', err);
+    console.error('Error details:', { code: err.code, message: err.message, severity: err.severity });
+    throw err; // Stop startup if schema creation fails
   }
 }
 
