@@ -1,0 +1,47 @@
+# Prometheus Configuration Template
+# IMPORTANTE: Este archivo contiene credenciales sensibles
+# NO commitear a git - usar variables de entorno en producción
+# Ver .gitignore - prometheus.yml está excluido de git
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+  external_labels:
+    monitor: 'devops-app-monitor'
+
+# Configuración de remote_write para enviar métricas a Grafana Cloud
+remote_write:
+  - url: https://prometheus-prod-56-prod-us-east-2.grafana.net/api/prom/push
+    basic_auth:
+      username: '2767091'
+      password: 'glc_YOUR_GRAFANA_CLOUD_TOKEN_HERE'
+
+# Reglas de alertas
+rule_files:
+  - 'alert_rules.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Configuración de scrape jobs
+scrape_configs:
+  # Scrape del Prometheus mismo
+  - job_name: 'prometheus-self'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scrape del backend en Render
+  - job_name: 'backend-render'
+    scheme: https
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['devops-crud-app-backend.onrender.com']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__scheme__]
+        target_label: scheme
