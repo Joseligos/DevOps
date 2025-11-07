@@ -25,4 +25,4 @@ npm-debug.log*
 .idea/
 *.swp
 *.swo
-.DS_Store
+.DS_Storeprometheus.yml

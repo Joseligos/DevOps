@@ -72,11 +72,31 @@ terraform apply infra.tfplan
 
 📖 **Guía completa:** Ver `terraform/README.md` y `DEPLOYMENT_CHECKLIST.md`
 
-## 📚 Documentación
+## � Security & Monitoring
+
+### Seguridad Automática
+- **CodeQL**: Análisis estático de código (búsqueda de vulnerabilidades)
+- **OWASP ZAP**: Pruebas dinámicas de seguridad contra la API
+- **Trivy**: Escaneo de vulnerabilidades en imagen Docker
+- **Secret Detection**: Detección de credenciales hardcodeadas
+
+📖 **Guía completa:** Ver `SECURITY_IMPLEMENTATION.md`
+
+### Monitoreo con Prometheus + Grafana
+- **Prometheus**: Colección de métricas en local
+- **Grafana Cloud**: Dashboard y visualización en la nube
+- **Alertas**: Reglas configuradas para eventos críticos
+
+📖 **Guía completa:** Ver `MONITORING_GUIDE.md` y `GRAFANA_CLOUD_SETUP_VISUAL.md`
+
+## �📚 Documentación
 
 - 📘 [Terraform Setup](terraform/README.md)
 - ✅ [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)
 - 🏛️ [Architecture](ARCHITECTURE.md)
+- 🔐 [Security Implementation](SECURITY_IMPLEMENTATION.md)
+- 📊 [Monitoring Guide](MONITORING_GUIDE.md)
+- 📈 [Grafana Setup](GRAFANA_CLOUD_SETUP_VISUAL.md)
 
 ## 🔄 CI/CD Pipeline
 
