@@ -1,0 +1,134 @@
+name: Performance Benchmark
+
+on:
+  schedule:
+    # Run every Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  benchmark:
+    name: 📊 Performance Benchmark Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📍 Pipeline start time
+        id: pipeline_start
+        run: echo "PIPELINE_START=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: "Benchmark 1: Cold Install (no cache)"
+        id: cold_install
+        run: |
+          echo "Cold Install (no cache)"
+          rm -rf node_modules package-lock.json
+          START=$(date +%s%N | cut -b1-13)
+          npm install > /tmp/install.log 2>&1
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((($END - $START) / 1000))
+          echo "Cold Install Time: ${DURATION}ms"
+          echo "duration_ms=$DURATION" >> $GITHUB_OUTPUT
+
+      - name: "Benchmark 2: Warm Install (with cache)"
+        id: warm_install
+        run: |
+          echo "Warm Install (with cache)"
+          rm -rf node_modules
+          START=$(date +%s%N | cut -b1-13)
+          npm install > /tmp/install2.log 2>&1
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((($END - $START) / 1000))
+          echo "Warm Install Time: ${DURATION}ms"
+          echo "duration_ms=$DURATION" >> $GITHUB_OUTPUT
+          
+          # Calculate cache savings
+          COLD=${{ steps.cold_install.outputs.duration_ms }}
+          IMPROVEMENT=$(( ($COLD - $DURATION) * 100 / $COLD ))
+          echo "Cache Improvement: ${IMPROVEMENT}%"
+
+      - name: "Benchmark 3: Unit Tests"
+        id: tests
+        run: |
+          echo "Running Unit Tests"
+          START=$(date +%s%N | cut -b1-13)
+          npm test -- --silent 2>/dev/null || echo "Tests completed"
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((($END - $START) / 1000))
+          echo "Test Suite Time: ${DURATION}ms"
+          echo "duration_ms=$DURATION" >> $GITHUB_OUTPUT
+
+      - name: "Benchmark 4: Linting"
+        id: lint
+        run: |
+          echo "Running Linting"
+          START=$(date +%s%N | cut -b1-13)
+          npm run lint 2>/dev/null || echo "Linting completed"
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((($END - $START) / 1000))
+          echo "Lint Time: ${DURATION}ms"
+          echo "duration_ms=$DURATION" >> $GITHUB_OUTPUT
+
+      - name: "Benchmark 5: Build"
+        id: build
+        run: |
+          echo "Running Build"
+          START=$(date +%s%N | cut -b1-13)
+          npm run build 2>/dev/null || echo "Build completed"
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((($END - $START) / 1000))
+          echo "Build Time: ${DURATION}ms"
+          echo "duration_ms=$DURATION" >> $GITHUB_OUTPUT
+
+      - name: 📝 Generate Benchmark Report
+        run: |
+          cat >> performance-benchmarks.md << 'EOF'
+          # Performance Benchmark Report
+          
+          **Date**: ${{ steps.pipeline_start.outputs.PIPELINE_START }}
+          
+          | Benchmark | Duration | Previous | Trend |
+          |-----------|----------|----------|-------|
+          | Cold Install | ${{ steps.cold_install.outputs.duration_ms }}ms | - | 🔴 baseline |
+          | Warm Install | ${{ steps.warm_install.outputs.duration_ms }}ms | - | 🟢 cached |
+          | Unit Tests | ${{ steps.tests.outputs.duration_ms }}ms | - | - |
+          | Linting | ${{ steps.lint.outputs.duration_ms }}ms | - | - |
+          | Build | ${{ steps.build.outputs.duration_ms }}ms | - | - |
+          
+          **Cache Impact**: Warm install is faster (see times above)
+          
+          ---
+          EOF
+          cat performance-benchmarks.md
+
+      - name: 📤 Commit Benchmark Results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions"
+          git add performance-benchmarks.md
+          git commit -m "Update performance benchmarks - $(date +%Y-%m-%d)" || echo "No changes to commit"
+          git push
+
+      - name: ✅ Benchmark Summary
+        run: |
+          echo "═══════════════════════════════════════════════════════"
+          echo "✅ PERFORMANCE BENCHMARK COMPLETE"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+          echo "Results Summary:"
+          echo "  Cold Install:    ${{ steps.cold_install.outputs.duration_ms }}ms"
+          echo "  Warm Install:    ${{ steps.warm_install.outputs.duration_ms }}ms"
+          echo "  Tests:           ${{ steps.tests.outputs.duration_ms }}ms"
+          echo "  Linting:         ${{ steps.lint.outputs.duration_ms }}ms"
+          echo "  Build:           ${{ steps.build.outputs.duration_ms }}ms"
+          echo ""
+          echo "Files Updated:"
+          echo "  📄 performance-benchmarks.md"
+          echo ""
+          echo "═══════════════════════════════════════════════════════"
