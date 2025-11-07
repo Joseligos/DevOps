@@ -1,4 +1,4 @@
-// Backend API with Prometheus metrics
+// Backend API with Prometheus metrics (v2)
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
