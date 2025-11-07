@@ -27,6 +27,7 @@ jobs:
         with:
           target: 'https://devops-crud-app-backend.onrender.com'
           fail_action: false
+          cmd_options: '-a'
       
       - name: Convert ZAP JSON to SARIF
         if: always()
@@ -71,10 +72,16 @@ jobs:
       
       - name: Upload ZAP SARIF report
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('report_sarif.sarif') != ''
         with:
           sarif_file: report_sarif.sarif
           category: 'OWASP ZAP'
+      
+      - name: Debug - Check files
+        if: always()
+        run: |
+          echo "Files in workspace:"
+          ls -lah report*.* 2>/dev/null || echo "No report files found"
       
       - name: Publish scan results
         if: always()
