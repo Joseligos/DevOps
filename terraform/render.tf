@@ -6,16 +6,19 @@ resource "render_web_service" "backend" {
   region      = "oregon"
   plan        = "starter"  # Free tier
   
-  # Use Dockerfile at repo root (Render will auto-detect)
+  # For Docker-based deployment, we use native_runtime with root_directory = ""
+  # This allows Render to detect and use the Dockerfile at the repository root
   runtime_source = {
-    docker = {
-      auto_deploy = true
-      branch      = var.branch
-      repo_url    = var.github_repo_url
+    native_runtime = {
+      auto_deploy      = true
+      branch           = var.branch
+      repo_url         = var.github_repo_url
+      root_directory   = ""          # Empty = repo root (where Dockerfile is)
+      runtime          = "docker"    # Use Docker
     }
   }
   
-  # Root directory is repo root (where Dockerfile is)
+  # Root directory is repo root (where Dockerfile is located)
   root_directory = ""
   
   # Environment variables (map format)
