@@ -136,10 +136,11 @@ async function ensureSchema() {
 // ========== ENDPOINTS ==========
 
 // Prometheus metrics endpoint
-app.get('/metrics', (req, res, next) => {
+app.get('/metrics', async (req, res, next) => {
   try {
+    const metrics = await register.metrics();
     res.set('Content-Type', register.contentType);
-    res.end(register.metrics());
+    res.end(metrics);
   } catch (err) {
     console.error('[METRICS] Error generating metrics:', err);
     errorsTotal.labels('metrics_generation', '/metrics').inc();
