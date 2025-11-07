@@ -33,23 +33,14 @@ jobs:
           fetch-depth: 0  # Full history for better analysis
       
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # Optional: uncomment if you have a custom queries
-          # queries: security-and-quality
       
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
       
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
-      
-      - name: Upload CodeQL results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'results/js.sarif'
-          wait-for-processing: true
