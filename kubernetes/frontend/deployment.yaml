@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: devops-app
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: node:18-alpine
+        workingDir: /app
+        command:
+          - sh
+          - -c
+          - |
+            npm ci && npm run build && npx serve -s build -l 3000
+        volumeMounts:
+        - name: frontend-code
+          mountPath: /app
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://backend"
+        - name: CI
+          value: "false"
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: frontend-code
+        hostPath:
+          path: /home/joseligo/DevOps/frontend
+          type: Directory
