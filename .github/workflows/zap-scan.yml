@@ -26,10 +26,51 @@ jobs:
         uses: zaproxy/action-full-scan@v0.8.0
         with:
           target: 'https://devops-crud-app-backend.onrender.com'
-          fail_action: false  # Don't fail on warnings (for visibility)
+          fail_action: false
+      
+      - name: Convert ZAP JSON to SARIF
+        if: always()
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          try:
+              with open('report_json.json', 'r') as f:
+                  data = json.load(f)
+              
+              sarif = {
+                  "version": "2.1.0",
+                  "runs": [{
+                      "tool": {"driver": {"name": "ZAP", "version": "2.14.0"}},
+                      "results": []
+                  }]
+              }
+              
+              if 'alerts' in data:
+                  for alert in data['alerts']:
+                      for item in alert.get('items', []):
+                          sarif["runs"][0]["results"].append({
+                              "ruleId": str(alert.get("pluginid", "")),
+                              "message": {"text": alert.get("alert", "")},
+                              "level": "warning",
+                              "locations": [{
+                                  "physicalLocation": {
+                                      "address": {"relativeUrl": item.get("uri", "")}
+                                  }
+                              }]
+                          })
+              
+              with open('report_sarif.sarif', 'w') as f:
+                  json.dump(sarif, f, indent=2)
+              print("✅ SARIF report generated successfully")
+          except Exception as e:
+              print(f"Warning: Could not generate SARIF: {e}")
+              sys.exit(0)
+          EOF
       
       - name: Upload ZAP SARIF report
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: report_sarif.sarif
