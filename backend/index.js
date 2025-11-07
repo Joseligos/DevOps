@@ -1,4 +1,5 @@
 // Backend API with automatic schema initialization
+// Force cache bust: v2
 const express = require('express'); // Import Express for building the API
 const cors = require('cors'); // Import CORS to allow frontend access
 const { Pool } = require('pg'); // Import PostgreSQL client
