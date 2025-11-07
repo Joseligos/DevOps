@@ -127,9 +127,15 @@ async function ensureSchema() {
 // ========== ENDPOINTS ==========
 
 // Prometheus metrics endpoint
-app.get('/metrics', (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.end(register.metrics());
+app.get('/metrics', (req, res, next) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(register.metrics());
+  } catch (err) {
+    console.error('[METRICS] Error generating metrics:', err);
+    errorsTotal.labels('metrics_generation', '/metrics').inc();
+    next(err);
+  }
 });
 
 // Health check endpoint
